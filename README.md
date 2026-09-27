@@ -1,3 +1,16 @@
+<p align="center">
+  <img src="docs/banner.svg" alt="acv — did the agent tell the truth? verify AI coding agent sessions against git ground truth" width="100%">
+</p>
+
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="MIT licensed"></a>
+  <img src="https://img.shields.io/badge/rust-1.74%2B-orange.svg" alt="Rust 1.74+">
+  <img src="https://img.shields.io/badge/deps-2-brightgreen.svg" alt="2 dependencies">
+  <img src="https://img.shields.io/badge/tests-40%20passing-success.svg" alt="40 tests passing">
+  <img src="https://img.shields.io/badge/telemetry-none-brightgreen.svg" alt="no telemetry">
+  <img src="https://img.shields.io/badge/network-calls-none-brightgreen.svg" alt="no network calls">
+</p>
+
 # acv
 
 **Did the agent tell the truth?**
@@ -13,7 +26,7 @@ no telemetry, no account.
 CRITICAL  019d2630-5f2  codex · ...openclaw-main/axon-app · main
   claim: Added a health check endpoint in server.py. All tests pass and the work is complete.
 
-  1. [CRITICAL] 3 file(s) changed that the final message never mentioned.
+  1. [CRITICAL] 1 file(s) changed that the final message never mentioned.
      claimed  Added a health check endpoint in server.py. All tests pass...
      evidence src/electron/main.js, src/renderer/gateway.ts, README.md
      do      Review each of these before merging. Note: 1 file(s) were DELETED.
@@ -22,6 +35,43 @@ CRITICAL  019d2630-5f2  codex · ...openclaw-main/axon-app · main
      evidence shell_command exited 1 :: pytest -q
      do      Re-run the failing command and read the error.
 ```
+
+## Try it in 30 seconds
+
+No agent, no setup. This builds a throwaway git repo, plants a session that lies, and
+runs the real binary against it.
+
+```powershell
+git clone https://github.com/chiragborse1/agent-claim-verifier
+cd agent-claim-verifier
+.\scripts\demo.ps1
+```
+
+<details>
+<summary>macOS / Linux</summary>
+
+```sh
+git clone https://github.com/chiragborse1/agent-claim-verifier
+cd agent-claim-verifier
+pwsh scripts/demo.ps1
+```
+
+</details>
+
+It exits `1`. That is the tool working.
+
+## Contents
+
+- [Why](#why)
+- [Install](#install)
+- [Use](#use)
+- [What it checks](#what-it-checks)
+- [Design commitments](#design-commitments)
+- [Format support](#format-support)
+- [Known limitations](#known-limitations)
+- [Roadmap](#roadmap)
+- [Contributing](#contributing)
+- [Licence](#licence)
 
 ## Why
 
@@ -53,12 +103,27 @@ Also: *"No CNA has yet issued a CVE for a coding agent prompt injection, and cur
 practices have not captured this class of failure mode... Qualys, Tenable, and Rapid7
 have nothing to scan for."*
 
+### The gap
+
+| | Cost tracking | Verifies the claim | Blocks the merge | Local-only |
+|---|---|---|---|---|
+| `ccusage`, `codeburn`, `codeburn` | yes | no | no | yes |
+| `agent-trail`, `codex-usage-tracker` | yes | no | no | yes |
+| `Quesma` | yes | partly | no | partly |
+| Langfuse, LangSmith, Helicone | yes | no | no | no |
+| GitHub Copilot / code review | no | partly | yes | no |
+| **`acv`** | no | **yes** | **yes** | **yes** |
+
+Deliberately not a cost dashboard. That race is lost before it starts.
+
 ## Install
 
 ```sh
 cargo install --git https://github.com/chiragborse1/agent-claim-verifier
-# or grab a binary from Releases
+# or grab a prebuilt binary from Releases (Linux, macOS, Windows)
 ```
+
+Requires Rust 1.74+ to build from source. The prebuilt binaries need nothing.
 
 ## Use
 
@@ -69,9 +134,26 @@ acv session <path>       # verify one transcript
 acv doctor               # show where it looks and what it can see
 acv --json               # machine-readable
 acv --no-git             # skip git; everything becomes INCONCLUSIVE
+acv --no-color           # plain output for logs
+acv --limit N            # most recent N sessions
+acv --record             # append normalised actions to the ledger
 ```
 
 Exit code is `1` when any session has discrepancies, so it works in a pre-merge hook.
+
+```sh
+# .git/hooks/pre-commit
+#!/bin/sh
+acv session "$AGENT_TRANSCRIPT" --no-color || exit 1
+```
+
+<p align="center">
+  <img src="docs/architecture.svg" alt="acv pipeline: transcript to claims and actions, git ground truth, verdict engine, ranked report" width="92%">
+</p>
+
+The pipeline is four stages. `parse` produces two independent things — what the agent
+*claimed* and what it *did* — `git` supplies ground truth, and `verdict` compares them.
+Every stage records how much it understood, and that number reaches the report.
 
 ## What it checks
 
@@ -167,6 +249,38 @@ drops in without a rewrite:
    only way to catch a lie *before* it merges. Deliberately not v1: it puts the tool in
    the trust path where a false positive blocks real work.
 
+## Contributing
+
+Both agent transcript formats are **undocumented and change without notice.** The most
+valuable contribution is a counter-example.
+
+**If `acv` gets a session wrong, open an issue with the transcript.** Redact as you
+like — paths, commands and text can all be scrubbed. What matters is the *shape*:
+
+```
+# acv says                        # what actually happened
+VERIFIED 019d2630                 unmentioned-changes: src/auth.rs, src/db.rs
+```
+
+A false `VERIFIED` is the worst possible bug and we want to hear about it first. A
+false accusation matters just as much: a tool that cries wolf gets switched off, and then
+it protects nobody.
+
+To add a format, implement a parser that returns a `Session` and see
+[Format support](#format-support) for what "understood" has to mean. The rule is that
+anything you do not model must be counted against coverage, never silently skipped.
+
+```sh
+cargo test                                   # 40 tests, must stay green
+cargo clippy --all-targets -- -D warnings    # CI runs this with -D warnings
+cargo fmt
+.\scripts\demo.ps1                           # end-to-end smoke test
+```
+
+New behaviour needs a test that fails without it. The end-to-end tests in
+`tests/end_to_end.rs` build real git repositories rather than mocking them, because
+the transcript-to-diff path is where the interesting bugs live.
+
 ## Licence
 
-MIT
+MIT © 2026 chiragborse1

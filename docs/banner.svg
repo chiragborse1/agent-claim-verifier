@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="420" viewBox="0 0 1200 420" role="img" aria-label="acv — did the agent tell the truth?">
+  <title>acv — did the agent tell the truth?</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0d1117"/>
+      <stop offset="55%" stop-color="#0b1020"/>
+      <stop offset="100%" stop-color="#0d1117"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#f85149"/>
+      <stop offset="50%" stop-color="#d29922"/>
+      <stop offset="100%" stop-color="#3fb950"/>
+    </linearGradient>
+    <linearGradient id="titleFade" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#8b949e"/>
+    </linearGradient>
+    <filter id="soft" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="26"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="420" fill="url(#bg)"/>
+
+  <!-- ambient glow -->
+  <g filter="url(#soft)" opacity="0.30">
+    <ellipse cx="200" cy="90" rx="260" ry="120" fill="#1f6feb"/>
+    <ellipse cx="1010" cy="360" rx="240" ry="110" fill="#f85149"/>
+  </g>
+
+  <!-- wordmark -->
+  <g font-family="ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace">
+    <text x="64" y="132" font-size="86" font-weight="700" letter-spacing="-2" fill="url(#titleFade)">acv</text>
+    <rect x="196" y="82" width="4" height="62" rx="2" fill="url(#accent)"/>
+
+    <text x="228" y="106" font-size="25" font-weight="600" fill="#e6edf3">Did the agent tell the truth?</text>
+    <text x="228" y="138" font-size="15" fill="#8b949e">Verify AI coding agent sessions against git ground truth.</text>
+
+    <!-- terminal -->
+    <g>
+      <rect x="64" y="196" width="1072" height="168" rx="10" fill="#010409" stroke="#30363d"/>
+      <rect x="64" y="196" width="1072" height="34" rx="10" fill="#161b22"/>
+      <rect x="64" y="220" width="1072" height="10" fill="#161b22"/>
+      <circle cx="86" cy="213" r="5" fill="#f85149"/>
+      <circle cx="104" cy="213" r="5" fill="#d29922"/>
+      <circle cx="122" cy="213" r="5" fill="#3fb950"/>
+      <text x="140" y="218" font-size="11" fill="#6e7681">acv session rollout-2026-09-27.jsonl</text>
+
+      <text x="88" y="258" font-size="13.5" fill="#f85149" font-weight="700">DISCREPANCIES</text>
+      <text x="212" y="258" font-size="13.5" fill="#8b949e">codex &#183; axon-app &#183; main</text>
+
+      <text x="88" y="281" font-size="13.5" fill="#6e7681">claim:</text>
+      <text x="136" y="281" font-size="13.5" fill="#39c5cf">Added a health check endpoint in server.py. All tests pass.</text>
+
+      <text x="88" y="304" font-size="13.5" fill="#6e7681">verification:</text>
+      <text x="180" y="304" font-size="13.5" fill="#d29922">pytest -q  (exit 1)</text>
+
+      <text x="88" y="332" font-size="13.5" fill="#f85149" font-weight="700">[CRITICAL]</text>
+      <text x="176" y="332" font-size="13.5" fill="#e6edf3">1 file changed that the final message never mentioned.</text>
+
+      <text x="88" y="352" font-size="13.5" fill="#6e7681">evidence</text>
+      <text x="152" y="352" font-size="13.5" fill="#e6edf3">README.md &#8212; one file DELETED</text>
+    </g>
+
+    <!-- footer -->
+    <g font-size="13" fill="#6e7681">
+      <text x="64" y="398">MIT licensed</text>
+      <circle cx="152" cy="393" r="2" fill="#30363d"/>
+      <text x="164" y="398">local-first, read-only</text>
+      <circle cx="296" cy="393" r="2" fill="#30363d"/>
+      <text x="308" y="398">no telemetry, no account</text>
+      <circle cx="462" cy="393" r="2" fill="#30363d"/>
+      <text x="474" y="398">codex + claude code</text>
+      <text x="1136" y="398" text-anchor="end" fill="#8b949e">acv --all</text>
+    </g>
+  </g>
+</svg>
