@@ -36,38 +36,62 @@ jobs:
       - run: cargo test --all-targets
 
   release:
-    name: release
+    name: release ${{ matrix.target }}
     needs: test
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        # Apple targets cannot be cross-compiled from Linux (no macOS SDK) and
+        # *-pc-windows-msvc needs the MSVC toolchain, so each target is built on
+        # the runner that owns its toolchain. Dropping a target here silently
+        # ships a release with no binary for that platform.
+        include:
+          - { runner: ubuntu-latest,  target: x86_64-unknown-linux-musl,   asset: acv-linux-x86_64 }
+          - { runner: ubuntu-latest,  target: aarch64-unknown-linux-musl, asset: acv-linux-aarch64 }
+          - { runner: macos-latest,   target: aarch64-apple-darwin,       asset: acv-macos-arm64 }
+          - { runner: macos-13,       target: x86_64-apple-darwin,        asset: acv-macos-x86_64 }
+          - { runner: windows-latest, target: x86_64-pc-windows-msvc,    asset: acv-windows-x86_64.exe }
+          - { runner: windows-latest, target: aarch64-pc-windows-msvc,   asset: acv-windows-arm64.exe }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - name: build
+        run: cargo build --release --target ${{ matrix.target }}
+      - name: collect
+        shell: bash
+        run: |
+          set -eu
+          mkdir -p dist
+          cp "target/${{ matrix.target }}/release/acv${{ endsWith(matrix.asset, '.exe') && '.exe' || '' }}" "dist/${{ matrix.asset }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bin-${{ matrix.target }}
+          path: dist/${{ matrix.asset }}
+          if-no-files-found: error
+
+  publish:
+    name: publish release
+    needs: release
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - name: build binaries
-        run: |
-          set -eu
-          mkdir -p dist
-          for target in x86_64-unknown-linux-musl aarch64-apple-darwin x86_64-apple-darwin x86_64-pc-windows-msvc aarch64-pc-windows-msvc; do
-            echo "::group::$target"
-            rustup target add "$target"
-            if cargo build --release --target "$target"; then
-              bin=target/$target/release/acv
-              case "$target" in
-                *windows-msvc) cp "$bin.exe" "dist/acv-$target.exe" ;;
-                *)             cp "$bin" "dist/acv-$target" ;;
-              esac
-            else
-              echo "::warning::build failed for $target, skipping"
-            fi
-            echo "::endgroup::"
-          done
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
       - name: checksums
         working-directory: dist
         run: sha256sum acv-* > checksums.txt
       - uses: softprops/action-gh-release@v2
         with:
           files: dist/*
-          draft: true
+          draft: false
           generate_release_notes: true
