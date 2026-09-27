@@ -1,0 +1,68 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: test ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      # The end-to-end tests shell out to git, so it has to be a real git.
+      - uses: actions/configure-git@v3
+      - name: configure identity for test repos
+        run: git config --global user.email "ci@example.com" && git config --global user.name "CI"
+      - run: cargo fmt --check
+      - run: cargo clippy --all-targets -- -D warnings
+      - run: cargo test --all-targets
+
+  release:
+    name: release
+    needs: test
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: build binaries
+        run: |
+          set -eu
+          mkdir -p dist
+          for target in x86_64-unknown-linux-musl aarch64-apple-darwin x86_64-apple-darwin x86_64-pc-windows-msvc aarch64-pc-windows-msvc; do
+            echo "::group::$target"
+            rustup target add "$target"
+            if cargo build --release --target "$target"; then
+              bin=target/$target/release/acv
+              case "$target" in
+                *windows-msvc) cp "$bin.exe" "dist/acv-$target.exe" ;;
+                *)             cp "$bin" "dist/acv-$target" ;;
+              esac
+            else
+              echo "::warning::build failed for $target, skipping"
+            fi
+            echo "::endgroup::"
+          done
+      - name: checksums
+        working-directory: dist
+        run: sha256sum acv-* > checksums.txt
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          draft: true
+          generate_release_notes: true
