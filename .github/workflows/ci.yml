@@ -49,11 +49,19 @@ jobs:
         # *-pc-windows-msvc needs the MSVC toolchain, so each target is built on
         # the runner that owns its toolchain. Dropping a target here silently
         # ships a release with no binary for that platform.
+        #
+        # Only the three long-lived runners are used. macos-13, the last Intel
+        # runner, was queueing for 12+ minutes and is being retired, but it is not
+        # needed: Apple targets cross-compile between each other fine, so
+        # macos-latest builds both macOS binaries.
+        #
+        # aarch64 linux uses the gnu target rather than musl because the runner has
+        # aarch64-linux-gnu-gcc but no aarch64 musl cross-linker.
         include:
           - { runner: ubuntu-latest,  target: x86_64-unknown-linux-musl,   asset: acv-linux-x86_64 }
-          - { runner: ubuntu-latest,  target: aarch64-unknown-linux-musl, asset: acv-linux-aarch64 }
+          - { runner: ubuntu-latest,  target: aarch64-unknown-linux-gnu,   asset: acv-linux-arm64 }
           - { runner: macos-latest,   target: aarch64-apple-darwin,       asset: acv-macos-arm64 }
-          - { runner: macos-13,       target: x86_64-apple-darwin,        asset: acv-macos-x86_64 }
+          - { runner: macos-latest,   target: x86_64-apple-darwin,        asset: acv-macos-x86_64 }
           - { runner: windows-latest, target: x86_64-pc-windows-msvc,    asset: acv-windows-x86_64.exe }
           - { runner: windows-latest, target: aarch64-pc-windows-msvc,   asset: acv-windows-arm64.exe }
     steps:
