@@ -3,6 +3,9 @@ name: ci
 on:
   push:
     branches: [main]
+    # Tags must be listed explicitly: `branches` alone will not match a tag push,
+    # which silently skips the release job.
+    tags: ['v*']
   pull_request:
   workflow_dispatch:
 
