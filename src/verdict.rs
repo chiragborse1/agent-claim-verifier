@@ -483,7 +483,9 @@ pub fn evaluate(session: &Session, facts: &GitFacts) -> Verdict {
         };
     }
 
-    findings.sort_by(|a, b| b.severity.cmp(&a.severity));
+    // Highest severity first. sort_by_key with Reverse, because CI's clippy is
+    // newer than the local toolchain and rejects sort_by on a reversed cmp.
+    findings.sort_by_key(|f| std::cmp::Reverse(f.severity));
 
     let verification_commands = format_verification(verification);
 
