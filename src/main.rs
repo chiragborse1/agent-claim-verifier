@@ -211,7 +211,10 @@ fn doctor(paint: &Paint, o: &Opts) -> ExitCode {
     );
     match acv::record::ledger_path() {
         Some(p) => println!("  {:8} {:5}  {}", "ledger", "-", p.display()),
-        None => println!("  {:8} {:5}  no writable home; --record will be a no-op", "ledger", "-"),
+        None => println!(
+            "  {:8} {:5}  no writable home; --record will be a no-op",
+            "ledger", "-"
+        ),
     }
     ExitCode::SUCCESS
 }
