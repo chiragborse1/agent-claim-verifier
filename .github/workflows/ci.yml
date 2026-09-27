@@ -69,7 +69,17 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
+      # Without an explicit cross linker, cargo falls back to the host `cc`, and
+      # rust-lld then rejects an AArch64-only flag with
+      # "--fix-cortex-a53-843419 is only supported on AArch64".
+      - name: install aarch64 cross toolchain
+        if: startsWith(matrix.target, 'aarch64-unknown-linux')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu
       - name: build
+        env:
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
         run: cargo build --release --target ${{ matrix.target }}
       - name: collect
         shell: bash
